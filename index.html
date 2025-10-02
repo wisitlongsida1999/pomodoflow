@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PomodoFlow - Focus & Flow</title>
+    <meta name="description" content="A beautiful and modern Pomodoro timer app to boost your productivity">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PomodoFlow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <div class="logo">
+                    <h1>🍅 PomodoFlow</h1>
+                </div>
+                <div class="nav-controls">
+                    <button class="btn-icon" id="themeToggle" title="Toggle Dark Mode">
+                        <span class="icon">🌙</span>
+                    </button>
+                    <button class="btn-icon" id="settingsBtn" title="Settings">
+                        <span class="icon">⚙️</span>
+                    </button>
+                    <button class="btn-icon" id="statsBtn" title="Statistics">
+                        <span class="icon">📊</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Timer Section -->
+            <section class="timer-section">
+                <div class="timer-card">
+                    <!-- Timer Mode Selection -->
+                    <div class="timer-modes">
+                        <button class="mode-btn active" data-mode="work">
+                            <span class="mode-icon">🍅</span>
+                            <span class="mode-text">Focus</span>
+                        </button>
+                        <button class="mode-btn" data-mode="short-break">
+                            <span class="mode-icon">☕</span>
+                            <span class="mode-text">Short Break</span>
+                        </button>
+                        <button class="mode-btn" data-mode="long-break">
+                            <span class="mode-icon">🧘</span>
+                            <span class="mode-text">Long Break</span>
+                        </button>
+                    </div>
+
+                    <!-- Current Task Display -->
+                    <div class="current-task">
+                        <div class="task-info">
+                            <span class="task-label">Current Task:</span>
+                            <span class="task-name" id="currentTaskName">Select a task to start</span>
+                        </div>
+                        <div class="pomodoro-count">
+                            <span class="count-label">Pomodoro:</span>
+                            <span class="count-value" id="pomodoroCount">0 / 0</span>
+                        </div>
+                    </div>
+
+                    <!-- Timer Display -->
+                    <div class="timer-display">
+                        <div class="time-circle">
+                            <svg class="progress-circle" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" class="progress-background"></circle>
+                                <circle cx="50" cy="50" r="45" class="progress-bar" id="progressBar"></circle>
+                            </svg>
+                            <div class="time-content">
+                                <div class="time-digits" id="timeDisplay">25:00</div>
+                                <div class="time-label" id="timeLabel">Ready to focus</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timer Controls -->
+                    <div class="timer-controls">
+                        <button class="btn-primary" id="startPauseBtn">
+                            <span class="btn-icon">▶️</span>
+                            <span class="btn-text">Start</span>
+                        </button>
+                        <button class="btn-secondary" id="resetBtn">
+                            <span class="btn-icon">🔄</span>
+                            <span class="btn-text">Reset</span>
+                        </button>
+                        <button class="btn-secondary" id="skipBtn">
+                            <span class="btn-icon">⏭️</span>
+                            <span class="btn-text">Skip</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tasks Section -->
+            <section class="tasks-section">
+                <div class="tasks-card">
+                    <div class="tasks-header">
+                        <h2>📝 Tasks</h2>
+                        <div class="tasks-actions">
+                            <button class="btn-icon" id="clearCompletedBtn" title="Clear Completed">
+                                <span class="icon">🗑️</span>
+                            </button>
+                            <button class="btn-icon" id="clearAllBtn" title="Clear All">
+                                <span class="icon">🗂️</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Task Form -->
+                    <div class="add-task-form">
+                        <input type="text" id="taskInput" placeholder="What would you like to focus on?" maxlength="100">
+                        <div class="task-options">
+                            <div class="pomodoro-estimate">
+                                <label for="pomodoroEstimate">Est. Pomodoros:</label>
+                                <div class="estimate-controls">
+                                    <button type="button" class="estimate-btn" id="decreaseEstimate">−</button>
+                                    <input type="number" id="pomodoroEstimate" value="1" min="1" max="20">
+                                    <button type="button" class="estimate-btn" id="increaseEstimate">+</button>
+                                </div>
+                            </div>
+                            <button class="btn-add" id="addTaskBtn">
+                                <span class="btn-icon">➕</span>
+                                Add Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tasks List -->
+                    <div class="tasks-list" id="tasksList">
+                        <!-- Tasks will be dynamically added here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">📝</div>
+                        <h3>No tasks yet</h3>
+                        <p>Add a task to get started with your focused work session</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="btn-close" id="closeSettingsBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <h3>⏱️ Timer Settings</h3>
+                    <div class="setting-item">
+                        <label for="workDuration">Work Duration (minutes):</label>
+                        <input type="number" id="workDuration" value="25" min="1" max="60">
+                    </div>
+                    <div class="setting-item">
+                        <label for="shortBreakDuration">Short Break Duration (minutes):</label>
+                        <input type="number" id="shortBreakDuration" value="5" min="1" max="30">
+                    </div>
+                    <div class="setting-item">
+                        <label for="longBreakDuration">Long Break Duration (minutes):</label>
+                        <input type="number" id="longBreakDuration" value="15" min="1" max="60">
+                    </div>
+                    <div class="setting-item">
+                        <label for="longBreakInterval">Long Break Interval:</label>
+                        <input type="number" id="longBreakInterval" value="4" min="2" max="10">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>🔔 Notifications</h3>
+                    <div class="setting-item">
+                        <label for="enableNotifications">
+                            <input type="checkbox" id="enableNotifications" checked>
+                            Enable browser notifications
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="enableSounds">
+                            <input type="checkbox" id="enableSounds" checked>
+                            Enable sound alerts
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="soundVolume">Sound Volume:</label>
+                        <input type="range" id="soundVolume" min="0" max="100" value="50">
+                        <span class="volume-display">50%</span>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>🎨 Appearance</h3>
+                    <div class="setting-item">
+                        <label for="autoStartBreaks">
+                            <input type="checkbox" id="autoStartBreaks">
+                            Auto-start breaks
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="autoStartPomodoros">
+                            <input type="checkbox" id="autoStartPomodoros">
+                            Auto-start pomodoros
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="resetSettingsBtn">Reset to Defaults</button>
+                <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div class="modal" id="statsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 Statistics</h2>
+                <button class="btn-close" id="closeStatsBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🍅</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Today</div>
+                            <div class="stat-value" id="todayPomodoros">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-content">
+                            <div class="stat-label">This Week</div>
+                            <div class="stat-value" id="weekPomodoros">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Focus Time Today</div>
+                            <div class="stat-value" id="todayFocusTime">0h 0m</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Tasks Completed</div>
+                            <div class="stat-value" id="tasksCompleted">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>📈 Weekly Progress</h3>
+                    <canvas id="weeklyChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <div class="notification-content">
+            <span class="notification-icon"></span>
+            <span class="notification-text"></span>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,11 +1,11 @@
 name: Deploy to GitHub Pages
 
-# Trigger the workflow on push to main branch
+# Trigger the workflow on push to master branch
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:

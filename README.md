@@ -17,7 +17,7 @@ A beautiful and modern Pomodoro timer Progressive Web App (PWA) designed to boos
 ## 🚀 Quick Start
 
 ### Live Demo
-Visit the live application: [PomodoFlow Demo]([https://your-username.github.io/pomodoflow](https://wisitlongsida1999.github.io/pomodoflow/))
+Visit the live application: [PomodoFlow Demo](https://wisitlongsida1999.github.io/pomodoflow/)
 
 ### Basic Usage
 1. Open the app in your browser

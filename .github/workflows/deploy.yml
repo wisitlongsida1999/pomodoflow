@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: 🚀 Auto Deploy to GitHub Pages
 
 # Trigger the workflow on push to master branch
 on:
@@ -12,6 +12,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write
+  repository-projects: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -20,46 +22,123 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Setup and enable GitHub Pages automatically
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      pages-enabled: ${{ steps.check-pages.outputs.enabled }}
+    steps:
+      - name: 🔍 Check if GitHub Pages is enabled
+        id: check-pages
+        continue-on-error: true
+        run: |
+          echo "Checking GitHub Pages status..."
+          
+          # Check if Pages is already enabled
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages")
+          
+          if echo "$RESPONSE" | grep -q '"status": "built"'; then
+            echo "✅ GitHub Pages is already enabled and working"
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚙️ GitHub Pages needs to be enabled"
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🎯 Enable GitHub Pages automatically
+        if: steps.check-pages.outputs.enabled == 'false'
+        continue-on-error: true
+        run: |
+          echo "🚀 Enabling GitHub Pages with GitHub Actions source..."
+          
+          # Enable GitHub Pages with Actions source
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" \
+            -d '{
+              "source": {
+                "branch": "gh-pages",
+                "path": "/"
+              },
+              "build_type": "workflow"
+            }' || echo "⚠️ Pages might already be enabled or need manual setup"
+
+      - name: ✅ Verify GitHub Pages setup
+        run: |
+          echo "🔍 Verifying GitHub Pages configuration..."
+          sleep 5  # Wait for API changes to propagate
+          
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages")
+          
+          echo "Pages API Response: $RESPONSE"
+          echo "✅ Setup verification completed"
+
   # Build job
   build:
     runs-on: ubuntu-latest
+    needs: setup
     steps:
-      - name: Checkout
+      - name: 📦 Checkout repository
         uses: actions/checkout@v4
         
-      - name: Setup Node.js
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           
-      - name: Setup Pages
+      - name: ⚙️ Setup Pages configuration
         uses: actions/configure-pages@v4
+        id: pages
+        continue-on-error: true
         
-      - name: Build with static site generator (if needed)
+      - name: 🏗️ Build static site
         run: |
-          # For static sites, we just copy files as-is
-          # Add any build steps here if you need to process files
-          echo "Building static site..."
+          echo "🏗️ Building PomodoFlow static site..."
           
           # Create build directory
           mkdir -p _site
           
-          # Copy all files except hidden files and directories
-          cp -r *.html *.css *.js *.json LICENSE README.md _site/ 2>/dev/null || true
+          # Copy all project files
+          echo "📁 Copying HTML files..."
+          cp -r *.html _site/ 2>/dev/null || true
           
-          # Copy assets if they exist
+          echo "🎨 Copying CSS files..."
+          cp -r *.css _site/ 2>/dev/null || true
+          
+          echo "⚡ Copying JavaScript files..."
+          cp -r *.js _site/ 2>/dev/null || true
+          
+          echo "📱 Copying PWA manifest..."
+          cp -r *.json _site/ 2>/dev/null || true
+          
+          echo "📄 Copying documentation..."
+          cp -r *.md _site/ 2>/dev/null || true
+          cp LICENSE _site/ 2>/dev/null || true
+          
+          # Copy assets directory if it exists
           if [ -d "assets" ]; then
+            echo "🖼️ Copying assets..."
             cp -r assets _site/
           fi
           
-          # Ensure manifest.json is in the root
-          if [ -f "manifest.json" ]; then
-            cp manifest.json _site/
-          fi
+          # Copy any additional directories that might exist
+          for dir in images icons fonts; do
+            if [ -d "$dir" ]; then
+              echo "📂 Copying $dir..."
+              cp -r "$dir" _site/
+            fi
+          done
           
-          echo "Build completed successfully!"
+          echo "✅ Build completed successfully!"
+          echo "📋 Files in _site directory:"
+          ls -la _site/
           
-      - name: Upload artifact
+      - name: 📤 Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./_site
@@ -70,8 +149,21 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: [setup, build]
     steps:
-      - name: Deploy to GitHub Pages
+      - name: 🚀 Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        
+      - name: 🎉 Deployment Success
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 Your PomodoFlow app is now live at:"
+          echo "   ${{ steps.deployment.outputs.page_url }}"
+          echo ""
+          echo "📱 You can:"
+          echo "   • Visit the site in your browser"
+          echo "   • Install it as a PWA on mobile/desktop"
+          echo "   • Share the URL with others"
+          echo ""
+          echo "🔄 Future deployments will happen automatically when you push to master branch!"

@@ -1,4 +1,4 @@
-name: 🚀 Auto Deploy to GitHub Pages
+name: 🚀 Auto Deploy to GitHub Pages Public
 
 # Trigger the workflow on push to master branch
 on:

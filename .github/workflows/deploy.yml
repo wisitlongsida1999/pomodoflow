@@ -32,51 +32,111 @@ jobs:
         id: check-pages
         continue-on-error: true
         run: |
-          echo "Checking GitHub Pages status..."
+          echo "🔍 Checking GitHub Pages status..."
           
           # Check if Pages is already enabled
           RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pages")
           
-          if echo "$RESPONSE" | grep -q '"status": "built"'; then
-            echo "✅ GitHub Pages is already enabled and working"
-            echo "enabled=true" >> $GITHUB_OUTPUT
-          else
-            echo "⚙️ GitHub Pages needs to be enabled"
+          echo "📡 API Response: $RESPONSE"
+          
+          # Check if Pages exists and what build type it uses
+          if echo "$RESPONSE" | grep -q '"html_url"'; then
+            if echo "$RESPONSE" | grep -q '"build_type":"workflow"'; then
+              echo "✅ GitHub Pages is enabled with GitHub Actions"
+              echo "enabled=true" >> $GITHUB_OUTPUT
+              echo "build_type=workflow" >> $GITHUB_OUTPUT
+            elif echo "$RESPONSE" | grep -q '"build_type":"legacy"'; then
+              echo "⚠️ GitHub Pages is enabled but using legacy build (branch-based)"
+              echo "enabled=true" >> $GITHUB_OUTPUT  
+              echo "build_type=legacy" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️ GitHub Pages is enabled but build type unclear"
+              echo "enabled=true" >> $GITHUB_OUTPUT
+              echo "build_type=unknown" >> $GITHUB_OUTPUT
+            fi
+          elif echo "$RESPONSE" | grep -q '"message":"Not Found"'; then
+            echo "⚙️ GitHub Pages is not enabled"
             echo "enabled=false" >> $GITHUB_OUTPUT
+          else
+            echo "❓ Unable to determine Pages status"
+            echo "enabled=unknown" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🎯 Enable GitHub Pages automatically
+      - name: 🎯 Enable GitHub Pages with GitHub Actions
         if: steps.check-pages.outputs.enabled == 'false'
         continue-on-error: true
         run: |
-          echo "🚀 Enabling GitHub Pages with GitHub Actions source..."
+          echo "🚀 Enabling GitHub Pages with GitHub Actions deployment..."
           
-          # Enable GitHub Pages with Actions source
-          curl -X POST \
+          # Correct API call for GitHub Actions deployment
+          ENABLE_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+            -X POST \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
             "https://api.github.com/repos/${{ github.repository }}/pages" \
-            -d '{
-              "source": {
-                "branch": "gh-pages",
-                "path": "/"
-              },
-              "build_type": "workflow"
-            }' || echo "⚠️ Pages might already be enabled or need manual setup"
-
-      - name: ✅ Verify GitHub Pages setup
-        run: |
-          echo "🔍 Verifying GitHub Pages configuration..."
-          sleep 5  # Wait for API changes to propagate
+            -d '{"build_type": "workflow"}')
           
-          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          HTTP_STATUS=$(echo "$ENABLE_RESPONSE" | tail -n1 | cut -d: -f2)
+          RESPONSE_BODY=$(echo "$ENABLE_RESPONSE" | sed '$d')
+          
+          echo "📡 Enable API Response: $RESPONSE_BODY"
+          echo "📊 HTTP Status: $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" = "201" ] || [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Successfully enabled GitHub Pages with GitHub Actions"
+          elif [ "$HTTP_STATUS" = "409" ]; then
+            echo "ℹ️ GitHub Pages already exists, checking configuration..."
+          else
+            echo "⚠️ Failed to enable GitHub Pages automatically (Status: $HTTP_STATUS)"
+            echo "📋 Manual setup required - see instructions below"
+          fi
+
+      - name: 🔄 Update Pages to use GitHub Actions (if needed)
+        if: steps.check-pages.outputs.build_type == 'legacy'
+        continue-on-error: true
+        run: |
+          echo "🔄 Converting Pages from branch-based to GitHub Actions deployment..."
+          
+          # Update existing Pages to use GitHub Actions
+          UPDATE_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+            -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" \
+            -d '{"build_type": "workflow"}')
+          
+          HTTP_STATUS=$(echo "$UPDATE_RESPONSE" | tail -n1 | cut -d: -f2)
+          RESPONSE_BODY=$(echo "$UPDATE_RESPONSE" | sed '$d')
+          
+          echo "📡 Update API Response: $RESPONSE_BODY"
+          echo "📊 HTTP Status: $HTTP_STATUS"
+
+      - name: ✅ Verify GitHub Pages configuration
+        run: |
+          echo "🔍 Final verification of GitHub Pages setup..."
+          sleep 8  # Wait for API changes to propagate
+          
+          FINAL_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pages")
           
-          echo "Pages API Response: $RESPONSE"
-          echo "✅ Setup verification completed"
+          echo "📡 Final API Response: $FINAL_RESPONSE"
+          
+          if echo "$FINAL_RESPONSE" | grep -q '"build_type":"workflow"'; then
+            echo "✅ GitHub Pages is properly configured for GitHub Actions deployment"
+          else
+            echo "⚠️ Manual configuration may be required"
+            echo ""
+            echo "📋 Manual Setup Instructions:"
+            echo "1. Go to: https://github.com/${{ github.repository }}/settings/pages"
+            echo "2. Under 'Source', select 'GitHub Actions'"
+            echo "3. Save the settings"
+            echo "4. Re-run this workflow"
+          fi
 
   # Build job
   build:
